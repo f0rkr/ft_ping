@@ -11,7 +11,7 @@ t_args  *parse_clo(int len, char *clo_args[]) {
     while (i < len)
     {
         if (strcmp(clo_args[i], "-h") == 0)
-            args->help = 1;
+            args->sweepincrsize = 1;
         else if (strcmp(clo_args[i], "-v") == 0)
             args->verbose = 1;
         else
