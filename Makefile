@@ -10,3 +10,11 @@ all: $(EXEC_NAME)
 
 $(EXEC_NAME): $(SRCS)
 	$(CC) $(FLAGS) $(SRCS) -I $(INCLUDES) -o $(EXEC_NAME)
+
+clean:
+	@rm -rf $(NAME)
+
+fclean: clean
+
+
+re : fclean all
