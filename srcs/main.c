@@ -17,8 +17,27 @@ void    interrupt_handler(int sig)
     return ;
 }
 
-/** @Bief Main Loop Routine
+/** @Bief Ping Fuction
+ * Send ICMP packets to the target host
  * 
+ * @param icmp_sock Raw ICMP socket
+ * @return none
+ */
+void    icmp_echo(struct sockaddr_in *addr, char *hostname, int icmp_sock)
+{
+    int     ttl;
+    
+    ttl = icmp_sock;
+    g_loop=1;
+    printf("PING %s (%s): 56 data bytes\n", hostname, inet_ntoa((struct in_addr)addr->sin_addr));
+    while (g_loop) {
+        printf("64 bytes from %s: icmp_seq=%d ttl=114 time=%f ms\n", inet_ntoa((struct in_addr)addr->sin_addr), ttl, (float)43.234+ttl);
+        usleep(1000*100);
+        ttl++;
+    }     
+    printf("\n--- %s ping statistics ---\n", hostname);
+    return ;
+}
 /** @Brief Main function
  * Parsing arguments and execute the main program
  * 
@@ -28,7 +47,7 @@ void    interrupt_handler(int sig)
  */
 int     main(int argc, char **argv) {
     t_args *args;
-    int     ttl;
+
     struct addrinfo *res;
 
     if (argc <= 1 || argc > 4) {
@@ -45,15 +64,11 @@ int     main(int argc, char **argv) {
         return (1);
     }
     struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr; 
-    printf("PING %s (%s): 56 data bytes\n", args->hostname, inet_ntoa((struct in_addr)addr->sin_addr));
+   
     signal(SIGINT, (void *)&interrupt_handler);
-    g_loop=1;
-    ttl=0;
-    while (g_loop) {
-        printf("64 bytes from %s: icmp_seq=%d ttl=114 time=%f ms\n", inet_ntoa((struct in_addr)addr->sin_addr), ttl, (float)43.234+ttl);
-        usleep(1000*100);
-        ttl++;
-    }
-    printf("\n--- %s ping statistics ---\n", args->hostname);
+
+    // TO-DO: send icmp echo packets to targeted host
+    icmp_echo(addr, args->hostname, 0);
+
     return (0);
 }
