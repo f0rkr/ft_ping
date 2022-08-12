@@ -9,6 +9,7 @@
 # include <sys/socket.h>
 # include <netdb.h>
 # include <arpa/inet.h>
+# include <signal.h>
 
 /**
  * @brief arguments struct
