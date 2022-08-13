@@ -38,6 +38,7 @@ void    icmp_echo(struct sockaddr_in *addr, char *hostname, int icmp_sock)
     printf("\n--- %s ping statistics ---\n", hostname);
     return ;
 }
+
 /** @Brief Main function
  * Parsing arguments and execute the main program
  * 
