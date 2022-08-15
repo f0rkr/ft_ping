@@ -1,5 +1,10 @@
 #include "ft_ping.h"
 
+/**
+ * @brief Parsing command line
+ * parse command line argumments 
+ * and store valid arguments in t_args struct
+ */
 t_args  *parse_clo(int len, char *clo_args[]) {
     t_args *args;
     int i;
