@@ -21,6 +21,11 @@ typedef struct s_args {
     int		sweepincrsize;
 } t_args;
 
+/**
+ * @brief arguments parser
+ * Parse all argument and store
+ * valid data in t_args struct
+ */
 t_args  *parse_clo(int len, char *clo_args[]);
 
 #endif
