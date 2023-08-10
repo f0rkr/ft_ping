@@ -1,7 +1,7 @@
 FLAGS=-Wall -Werror -Wextra
 CC=gcc
 EXEC_NAME=ft_ping
-SRCS=srcs/main.c srcs/parsing/parse_clo.c
+SRCS=srcs/main.c srcs/parsing/parse_clo.c srcs/handle_errors.c srcs/icmp_utils.c srcs/handle_time.c
 INCLUDES=includes/
 
 

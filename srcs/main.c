@@ -1,6 +1,8 @@
 #include "ft_ping.h"
+//#include "globals.h"
 
-int g_loop;
+t_ping   *g_ping;
+
 
 /** @Brief Signal Handler
  * Handle the SIGKILL signal by setting the loop variable
@@ -13,29 +15,89 @@ int g_loop;
 void    interrupt_handler(int sig)
 {
     if (sig == SIGINT)
-        g_loop = 0;
+        g_ping->routine_loop = 0;
+    return ;
+}
+
+
+/**
+ * @brief Setup Destination Address
+ * Resolves the IP address of the provided hostname using getaddrinfo().
+ * Assigns the resolved address to the destination address in the global ping structure.
+ * Also extracts and stores the IPv4 address as a string in the ping structure.
+ *
+ * @param None.
+ * @return None.
+ */
+void    setup_destination_address()
+{
+    struct addrinfo *res;
+    char ip_str[INET_ADDRSTRLEN];
+
+    if (getaddrinfo(g_ping->args->hostname, NULL, NULL, &res) != 0)
+        show_errors(concatenate_strings("ft_ping: cannot resolve %s: Unknown host\n", g_ping->args->hostname), EX_NOHOST);
+    g_ping->dest_addr = (struct sockaddr_in *)res->ai_addr;
+    /* TO-DO: Extract the ipv4 address */
+    inet_ntop(AF_INET, &(g_ping->dest_addr->sin_addr), ip_str, INET_ADDRSTRLEN);
+    g_ping->ip_address = strdup(ip_str);
     return ;
 }
 
 /** @Bief Ping Fuction
- * Send ICMP packets to the target host
+ * Sends ICMP packets to the target host and manages the packet exchange loop.
  * 
- * @param icmp_sock Raw ICMP socket
+ * @param addr       Target host's socket address
+ * @param hostname   Hostname of the target
+ * @param icmp_sock  Raw ICMP socket
  * @return none
- */
-void    icmp_echo(struct sockaddr_in *addr, char *hostname, int icmp_sock)
+*/
+void    icmp_echo()
 {
-    int     ttl;
-    
-    ttl = icmp_sock;
-    g_loop=1;
-    printf("PING %s (%s): 56 data bytes\n", hostname, inet_ntoa((struct in_addr)addr->sin_addr));
-    while (g_loop) {
-        printf("64 bytes from %s: icmp_seq=%d ttl=114 time=%f ms\n", inet_ntoa((struct in_addr)addr->sin_addr), ttl, (float)43.234+ttl);
-        usleep(1000*100);
-        ttl++;
+    create_socket();
+    setup_destination_address();
+    printf("PING %s (%s): 56 data bytes\n", g_ping->args->hostname, g_ping->ip_address);
+    while (g_ping->routine_loop) {
+        send_icmp_packet();
+        recv_icmp_packet();
+        usleep(9000*100);
+        show_logs();
     }     
-    printf("\n--- %s ping statistics ---\n", hostname);
+    show_statistics();
+    return ;
+}
+
+/**
+ * @brief Initialize Ping Structure
+ * Allocates memory for the global ping structure and initializes its fields.
+ * The structure holds information related to ping operations, including IP address,
+ * arguments, loop control, ICMP header, and destination address.
+ *
+ * @param None.
+ * @return None.
+ */
+void    init_ping_struct()
+{
+    g_ping = (t_ping *)malloc(sizeof(t_ping));
+    if (g_ping == NULL)
+        show_errors("ERROR: can't allocate memory!", EX_OSERR);
+    g_ping->ping_data = (t_ping_data *)malloc(sizeof(t_ping_data));
+    if (g_ping->ping_data == NULL)
+        show_errors("ERROR: can't allocate memory!", EX_OSERR);
+    g_ping->ping_data->packets_received = 0;
+    g_ping->ping_data->packets_transmitted = 0;
+    g_ping->ping_data->rtt_min = 0;
+    g_ping->ping_data->rtt_max = 0;
+    g_ping->ping_data->rtt_total = 0;
+    g_ping->ip_address = NULL;
+    g_ping->args = NULL;
+    g_ping->routine_loop = 1;
+    g_ping->icmp_echo_header = NULL;
+    g_ping->dest_addr = NULL;
+    g_ping->sequence_number = 1;
+    g_ping->ttl = 114;
+    g_ping->rtt = 0;
+    g_ping->bytes_received = 0;
+    memset((void *)g_ping->recv_buffer, 0x00, sizeof(g_ping->recv_buffer));
     return ;
 }
 
@@ -44,32 +106,21 @@ void    icmp_echo(struct sockaddr_in *addr, char *hostname, int icmp_sock)
  * 
  * @param argc Number of arguments
  * @param argv CL arguments
- * @6return
+ * @return
  */
 int     main(int argc, char **argv) {
-    t_args *args;
 
-    struct addrinfo *res;
-
-    if (argc <= 1 || argc > 4) {
-        printf("Error: wrong number of arguments\n");
-        return (1);
-    }
-    // Parsing data 
-    args = parse_clo(argc, argv);
-    if (args == NULL)
-        return (1);
-    // printf("hostname: %s, verbos: %d, help: %d\n", args->hostname, args->verbose, args->help);
-    if (getaddrinfo(args->hostname, NULL, NULL, &res) != 0) {
-        printf("ft_ping: cannot resolve %s: Unknown host\n", args->hostname);
-        return (1);
-    }
-    struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr; 
-   
+    if (argc <= 1)
+        show_errors("ft_ping: usage error: Destination address required\n", 1);
+    init_ping_struct();
+    /* TO-DO: Parsing the command line arguments */
+    g_ping->args = parse_clo(argc, argv);
+    if (g_ping->args == NULL)
+        show_errors("", EX_OSERR);
+    //printf("hostname: %s, verbos: %d, help: %d\n", args->hostname, args->verbose, args->help);
+    /* TO-DO: Handling signales */
     signal(SIGINT, (void *)&interrupt_handler);
-
-    // TO-DO: send icmp echo packets to targeted host
-    icmp_echo(addr, args->hostname, 0);
-
+    /* TO-DO: sends icmp echo packets to targeted host */
+    icmp_echo();
     return (0);
 }
