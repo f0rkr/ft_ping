@@ -1,4 +1,4 @@
-FLAGS=-Wall -Werror -Wextra
+FLAGS=-Wall -Werror -Wextra -fsanitize=address -g
 CC=gcc
 EXEC_NAME=ft_ping
 SRCS=srcs/main.c srcs/parsing/parse_clo.c srcs/handle_errors.c srcs/icmp_utils.c srcs/handle_time.c

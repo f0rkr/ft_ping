@@ -18,6 +18,13 @@
 # include <stdarg.h>
 
 # define PING_PACKET_SIZE 64
+# define OPT_HELP       1
+# define OPT_VERBOSE    2
+# define OPT_FLOOD      3
+# define OPT_TTL        4
+# define OPT_NUMERIC    5
+# define OPT_DEADLINE   6
+# define OPT_PACKETSIZE 7
 
 /**
  * @brief arguments struct
@@ -37,6 +44,8 @@ typedef struct  s_ping_data {
     double rtt_min;
     double rtt_max;
     double rtt_total;
+    struct timeval start_time;
+    struct timeval end_time;
 }               t_ping_data;
 
 /** @brief ICMP packet struct
@@ -77,7 +86,7 @@ typedef struct s_ping
 {
     int                 sockfd;
     int                 ttl;
-    double                 rtt;
+    double              rtt;
     int                 bytes_received;
     int                 sequence_number;
     char                *ip_address;
@@ -88,11 +97,14 @@ typedef struct s_ping
     struct sockaddr_in  *dest_addr;
     t_ping_data         *ping_data;
     struct timeval      send_time;
+    int                 alarm;
     struct timeval      receive_time;
 }               t_ping;
 
+/* Global Variable */
 
 extern t_ping   *g_ping;
+
 /** @brief arguments parser
  * Parse all argument and store
  * valid data in t_args struct
@@ -107,4 +119,6 @@ void    show_statistics();
 char    *concatenate_strings(const char *format, ...);
 void    ft_bzero(void *s, size_t n);
 void    update_rtt_stats();
+void    collect_memory();
+void    construct_icmp_packet();
 #endif

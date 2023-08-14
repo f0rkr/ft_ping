@@ -12,14 +12,21 @@
  */
 void create_socket()
 {
-	int on;
+	// int on;
 
-	on = 1;
+	// on = 1;
 	/* TO-DO: Create raw socket */
 	g_ping->sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (g_ping->sockfd < 0)
 		show_errors("Error: creating raw socket failed!\n", EX_OSERR);
-	setsockopt(g_ping->sockfd, SOL_IP, IP_RECVERR,(char*)&on, sizeof(on));
+	struct timeval timeout;
+    timeout.tv_sec = 5;  // Set the timeout to 5 seconds
+    timeout.tv_usec = 0;
+    
+    if (setsockopt(g_ping->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+        perror("setsockopt");
+        return ;
+    }
 	return;
 }
 
@@ -108,9 +115,9 @@ void recv_icmp_packet()
     msg.msg_control = NULL;
     msg.msg_controllen = 0;
     g_ping->bytes_received = recvmsg(g_ping->sockfd, &msg, 0);
-    if (g_ping->bytes_received < 0) {
-        show_errors("Error receiving ICMP packet", EX_OSERR);
-    }
-    gettimeofday(&g_ping->receive_time, NULL);
+    if (g_ping->bytes_received < 0)
+        g_ping->alarm = 1;
+        // show_errors("Error receiving ICMP packet\n", EX_OSERR);
     g_ping->ping_data->packets_received++;
+    gettimeofday(&g_ping->receive_time, NULL);
 }
