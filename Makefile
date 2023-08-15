@@ -17,4 +17,4 @@ clean:
 fclean: clean
 
 
-re : fclean all
+re: fclean all

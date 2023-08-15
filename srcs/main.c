@@ -64,6 +64,8 @@ void    icmp_echo()
 {
     create_socket();
     setup_destination_address();
+    if (g_ping->args->verbose)
+        printf("PING %s (%s): %d data bytes, id %x = %d\n", g_ping->args->hostname, g_ping->ip_address, getuid(), getuid())
     printf("PING %s (%s): 56 data bytes\n", g_ping->args->hostname, g_ping->ip_address);
     gettimeofday(&g_ping->ping_data->start_time, NULL);
     while (g_ping->routine_loop) {

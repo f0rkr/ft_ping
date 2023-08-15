@@ -65,6 +65,17 @@ uint16_t calculate_icmp_checksum(void *data, size_t length) {
 void construct_icmp_packet()
 {
 	g_ping->icmp_echo_header = (t_echo_packet *)malloc(sizeof(struct s_echo_packet));
+    g_ping->icmp_echo_request->ip_header.version_ihl = 4;
+    g_ping->icmp_echo_request->ip_header.tos = 5;
+    g_ping->icmp_echo_request->total_length = htons(PING_PACKET_SIZE);
+    g_ping->icmp_echo_request->ip_header.id = htons(getpid());
+    g_ping->icmp_echo_request->ip_header.flags_offset = 0;
+    g_ping->icmp_echo_request->ip_header.ttl = 114;
+    g_ping->icmp_echo_request->ip_header.protocol = IPPROTO_ICMP;
+    g_ping->icmp_echo_request->ip_header.checksum = 0;
+    g_ping->icmp_echo_request->ip_header.src_ip = inet_addr($SRC_ADDRESS);
+    g_ping->icmp_echo_request->ip_header.dest_ip = inet_addr(g_ping->ip_address);
+    
 	if (g_ping->icmp_echo_header == NULL)
         show_errors("ERROR: can't allocate memory!", EX_OSERR);
     g_ping->icmp_echo_header->icmp_header.type = ICMP_ECHO;

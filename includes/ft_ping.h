@@ -38,7 +38,23 @@ typedef struct s_args {
     int     invalid_option;
 } t_args;
 
-typedef struct  s_ping_data {
+/**
+ * @brief IP Header struct
+*/
+typedef struct s_ip_header {
+	uint8_t version_ihl;
+	uint8_t tos;
+	uint16_t total_length;
+	uint16_t id;
+	uint16_t flags_offset;
+	uint8_t  ttl;
+	uint8_t	 protocol;
+	uint16_t checksum;
+	struct	 in_addr	src_ip;
+	struct	 in_addr	dest_ip;
+}		t_ip_header;
+
+typedef struct s_ping_data {
     int packets_transmitted;
     int packets_received;
     double rtt_min;
@@ -78,8 +94,9 @@ typedef struct s_icmp_packet
 */
 typedef struct s_echo_packet
 {
+    t_ip_header	    ip_header;
     t_icmp_packet   icmp_header;
-    char            data[PING_PACKET_SIZE - sizeof(t_icmp_packet)];
+    char            data[PING_PACKET_SIZE - sizeof(ip_header) - sizeof(t_icmp_packet)];
 }               t_echo_packet;
 
 typedef struct s_ping
