@@ -153,8 +153,7 @@ void    show_errors(char *error_string, int error_number)
 {
 	collect_memory();
 	// TO-DO: print the error string
-	dprintf(2, error_string);
-
+	dprintf(2, "%s\n", error_string);
 	// free(error_string);
 	// error_string = NULL;
 	if (error_number == EX_USAGE)
