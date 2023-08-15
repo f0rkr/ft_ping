@@ -88,7 +88,7 @@ typedef struct s_ping
     int                 bytes_received;
     int                 sequence_number;
     char                *ip_address;
-    char                recv_buffer[PING_PACKET_SIZE];
+    char                recv_buffer[PING_PACKET_SIZE * 100];
     t_args              *args;
     uint8_t             routine_loop;
     t_echo_packet       *icmp_echo_header;

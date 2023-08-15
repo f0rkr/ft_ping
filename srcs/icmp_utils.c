@@ -12,9 +12,9 @@
  */
 void create_socket()
 {
-	// int on;
+	int on;
 
-	// on = 1;
+	on = 1;
 	/* TO-DO: Create raw socket */
 	g_ping->sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (g_ping->sockfd < 0)
@@ -22,7 +22,8 @@ void create_socket()
 	struct timeval timeout;
     timeout.tv_sec = 1;  // Set the timeout to 5 seconds
     timeout.tv_usec = 0;
-    
+    if (setsockopt(g_ping->sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0)
+        return;
     if (setsockopt(g_ping->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
         perror("setsockopt");
         return ;
@@ -65,7 +66,8 @@ uint16_t calculate_icmp_checksum(void *data, size_t length) {
 void construct_icmp_packet()
 {
 	g_ping->icmp_echo_header = (t_echo_packet *)malloc(sizeof(struct s_echo_packet));
-	if (g_ping->icmp_echo_header == NULL)
+	
+    if (g_ping->icmp_echo_header == NULL)
         show_errors("ERROR: can't allocate memory!", EX_OSERR);
     g_ping->icmp_echo_header->icmp_header.type = ICMP_ECHO;
     g_ping->icmp_echo_header->icmp_header.checksum = 0;
@@ -75,7 +77,7 @@ void construct_icmp_packet()
 	memset((void *)g_ping->icmp_echo_header->data, 0xff, sizeof(g_ping->icmp_echo_header->data));
 
 	g_ping->icmp_echo_header->icmp_header.checksum= calculate_icmp_checksum((void *)g_ping->icmp_echo_header, sizeof(*g_ping->icmp_echo_header));
-	return ;
+    return ;
 }
 /** @Brief Send ICMP Packet
  * Constructs and sends an ICMP packet to the target host.
@@ -89,9 +91,10 @@ void send_icmp_packet()
 	construct_icmp_packet();
 	gettimeofday(&g_ping->send_time, NULL);
 	bytes_sent = sendto(g_ping->sockfd, (char *)g_ping->icmp_echo_header, PING_PACKET_SIZE, 0, (const struct sockaddr *)g_ping->dest_addr,  sizeof(*g_ping->dest_addr));
-	if (bytes_sent < 0)
-		show_errors("Error: can't send icmp packet!\n", EX_OSERR);
-	g_ping->ping_data->packets_transmitted++;
+	// if (bytes_sent < 0)
+	// 	show_errors("Error: can't send icmp packet!\n", EX_OSERR);
+	(void)bytes_sent;
+    g_ping->ping_data->packets_transmitted++;
 	return ;
 }
 
@@ -117,7 +120,17 @@ void recv_icmp_packet()
     g_ping->bytes_received = recvmsg(g_ping->sockfd, &msg, 0);
     if (g_ping->bytes_received < 0)
     {
+        struct icmphdr *icmp_header;
+        struct ip *ip_header;
+        char sender_ip_str[1024];
+
+        memset(sender_ip_str, 0x00, 1024);
+        ip_header = (struct ip *)g_ping->recv_buffer;
+        icmp_header = (struct icmphdr *)(g_ping->recv_buffer + sizeof(struct ip));
+        inet_ntop(AF_INET, &(ip_header->ip_src), sender_ip_str, INET_ADDRSTRLEN);
+        printf("ip header : %ld | icmp: %ld | buffer: %ld| sender: %s\n", sizeof(*ip_header),sizeof(*icmp_header), sizeof(g_ping->recv_buffer), sender_ip_str);
         g_ping->alarm = 1;
+
     }
     else
         gettimeofday(&g_ping->receive_time, NULL);
