@@ -64,13 +64,22 @@ void    icmp_echo()
 {
     create_socket();
     setup_destination_address();
-    printf("PING %s (%s): 56 data bytes\n", g_ping->args->hostname, g_ping->ip_address);
+    if (g_ping->args->options & OPT_VERBOSE)
+        printf("PING %s (%s): %ld data bytes, id 0x%x = %d\n", g_ping->args->hostname, g_ping->ip_address, sizeof(*g_ping->icmp_echo_header), getpid(), getpid());
+    else
+        printf("PING %s (%s): %ld data bytes\n", g_ping->args->hostname, g_ping->ip_address, sizeof(*g_ping->icmp_echo_header));
     gettimeofday(&g_ping->ping_data->start_time, NULL);
     while (g_ping->routine_loop) {
         send_icmp_packet();
 		recv_icmp_packet();
         if (!g_ping->alarm)
             show_logs();
+        g_ping->alarm = 0;
+        if (g_ping->icmp_echo_header)
+        {
+            free(g_ping->icmp_echo_header);
+            g_ping->icmp_echo_header = NULL;
+        }
         update_rtt_stats();
         usleep(8900*100);
     }
@@ -123,21 +132,16 @@ void    init_ping_struct()
  * @return
  */
 int     main(int argc, char **argv) {
-    if (getuid() != 0)
-    {
-        printf("ft_ping: usage error: must be run as root\n");
-        return(EX_NOPERM);
-    }
     if (argc <= 1)
     {
-        printf("ft_ping: usage error: Destination address required\n");
+        printf("ft_ping: missing host operand\n");
         return(1);
     }
     init_ping_struct();
     /* TO-DO: Parsing the command line arguments */
-    g_ping->args = parse_clo(argc, argv);
-    if (g_ping->args == NULL)
-        show_errors("", EX_OSERR);
+    parse_clo(argc, argv);
+    if (getuid() != 0)
+        show_errors("ft_ping: Lacking privilige for icmp socket.\n", EX_NOPERM);
     //printf("hostname: %s, verbos: %d, help: %d\n", args->hostname, args->verbose, args->help);
     /* TO-DO: Handling signales */
     signal(SIGINT, (void *)&interrupt_handler);

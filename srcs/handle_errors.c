@@ -71,7 +71,6 @@ void 		formated_received_log()
  */
 void show_logs()
 {
-
 	char ip_str[INET_ADDRSTRLEN];
    	char sender_ip_str[INET_ADDRSTRLEN];
     // struct icmphdr *icmp_header;
@@ -88,19 +87,11 @@ void show_logs()
     // }
 	g_ping->rtt = (g_ping->receive_time.tv_sec - g_ping->send_time.tv_sec) * 1000.0 + (g_ping->receive_time.tv_usec - g_ping->send_time.tv_usec) / 1000.0;
 	printf("%d bytes from %s: icmp_seq=%d ", g_ping->bytes_received,ip_str, g_ping->sequence_number++);
-	if (g_ping->args->verbose)
-		printf("ident=%d ",g_ping->icmp_echo_header->icmp_header.identifier);
+	// if (g_ping->args->verbose)
+	// 	printf("ident=%d ",g_ping->icmp_echo_header->icmp_header.identifier);
 	printf("ttl=%d ", ip_header->ip_ttl);
-	if (g_ping->rtt >= 1)
-		printf("time=%.1f ms\n", g_ping->rtt);
-	else
-		printf("time=%.3f ms\n", g_ping->rtt);
-	g_ping->alarm = 0;
-	if (g_ping->icmp_echo_header)
-	{
-		free(g_ping->icmp_echo_header);
-		g_ping->icmp_echo_header = NULL;
-	}
+	printf("time=%.3f ms\n", g_ping->rtt);
+	g_ping->ping_data->packets_received++;
 	return ;
 }
 
@@ -183,15 +174,16 @@ void show_statistics()
 	double avg_rtt;
 
     gettimeofday(&g_ping->ping_data->end_time, NULL);
-    int total_time_ms = (g_ping->ping_data->end_time.tv_sec - g_ping->ping_data->start_time.tv_sec) * 1000 +
-                        (g_ping->ping_data->end_time.tv_usec - g_ping->ping_data->start_time.tv_usec) / 1000;
+    //int total_time_ms = (g_ping->ping_data->end_time.tv_sec - g_ping->ping_data->start_time.tv_sec) * 1000 +
+//                        (g_ping->ping_data->end_time.tv_usec - g_ping->ping_data->start_time.tv_usec) / 1000;
 	packet_loss_percent= 100.0 * (1.0 - (double)g_ping->ping_data->packets_received / g_ping->ping_data->packets_transmitted);
-	printf("\n--- %s ping statistics ---\n", g_ping->args->hostname);
-	printf("%d packets transmitted, %d received, %d%% packet loss, time %dms\n", g_ping->ping_data->packets_transmitted, g_ping->ping_data->packets_received, (int)packet_loss_percent, total_time_ms);
+	printf("--- %s ping statistics ---\n", g_ping->args->hostname);
+	//printf("%d packets transmitted, %d received, %d%% packet loss, time %dms\n", g_ping->ping_data->packets_transmitted, g_ping->ping_data->packets_received, (int)packet_loss_percent, total_time_ms);
+	printf("%d packets transmitted, %d packets received, %d%% packet loss\n", g_ping->ping_data->packets_transmitted, g_ping->ping_data->packets_received, (int)packet_loss_percent);
 	if (g_ping->ping_data->packets_received > 0)
 	{
 		avg_rtt = g_ping->ping_data->rtt_total / g_ping->ping_data->packets_received;
-		printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n", g_ping->ping_data->rtt_min, avg_rtt, g_ping->ping_data->rtt_max, 0.147);
+		printf("routine_trip min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n", g_ping->ping_data->rtt_min, avg_rtt, g_ping->ping_data->rtt_max, 0.147);
 	}
 	return ;
 }

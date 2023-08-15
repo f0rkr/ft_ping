@@ -20,7 +20,7 @@ void create_socket()
 	if (g_ping->sockfd < 0)
 		show_errors("Error: creating raw socket failed!\n", EX_OSERR);
 	struct timeval timeout;
-    timeout.tv_sec = 5;  // Set the timeout to 5 seconds
+    timeout.tv_sec = 1;  // Set the timeout to 5 seconds
     timeout.tv_usec = 0;
     
     if (setsockopt(g_ping->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
@@ -72,7 +72,7 @@ void construct_icmp_packet()
     g_ping->icmp_echo_header->icmp_header.code = 0;
     g_ping->icmp_echo_header->icmp_header.identifier = getpid();
     g_ping->icmp_echo_header->icmp_header.sequence_number = g_ping->sequence_number;
-	memset((void *)g_ping->icmp_echo_header->data, 0x00, sizeof(g_ping->icmp_echo_header->data));
+	memset((void *)g_ping->icmp_echo_header->data, 0xff, sizeof(g_ping->icmp_echo_header->data));
 
 	g_ping->icmp_echo_header->icmp_header.checksum= calculate_icmp_checksum((void *)g_ping->icmp_echo_header, sizeof(*g_ping->icmp_echo_header));
 	return ;
@@ -116,8 +116,10 @@ void recv_icmp_packet()
     msg.msg_controllen = 0;
     g_ping->bytes_received = recvmsg(g_ping->sockfd, &msg, 0);
     if (g_ping->bytes_received < 0)
+    {
         g_ping->alarm = 1;
+    }
+    else
+        gettimeofday(&g_ping->receive_time, NULL);
         // show_errors("Error receiving ICMP packet\n", EX_OSERR);
-    g_ping->ping_data->packets_received++;
-    gettimeofday(&g_ping->receive_time, NULL);
 }

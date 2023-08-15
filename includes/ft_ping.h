@@ -17,7 +17,7 @@
 # include <errno.h>
 # include <stdarg.h>
 
-# define PING_PACKET_SIZE 64
+# define PING_PACKET_SIZE 56
 # define OPT_HELP       1
 # define OPT_VERBOSE    2
 # define OPT_FLOOD      3
@@ -32,9 +32,7 @@
  */
 typedef struct s_args {
     char	*hostname;
-    int		verbose;
-    int		sweepincrsize;
-    int     help;
+    int     options;
     int     invalid_option;
 } t_args;
 
@@ -109,7 +107,7 @@ extern t_ping   *g_ping;
  * Parse all argument and store
  * valid data in t_args struct
  */
-t_args  *parse_clo(int len, char *clo_args[]);
+void    parse_clo(int len, char *clo_args[]);
 void    create_socket();
 void    send_icmp_packet();
 void    recv_icmp_packet();
