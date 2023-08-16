@@ -70,9 +70,10 @@ uint16_t calculate_icmp_checksum(void *data, size_t length) {
  */
 void construct_icmp_packet()
 {   
-	g_ping->icmp_echo_header = (t_echo_packet *)malloc(sizeof(struct s_echo_packet));
+    struct timeval tv;
+	
+    g_ping->icmp_echo_header = (t_echo_packet *)malloc(sizeof(struct s_echo_packet));
     memset((void *)g_ping->icmp_echo_header->data, 0x00, sizeof(g_ping->icmp_echo_header->data));
-    
    
     g_ping->icmp_echo_header->ip_header.ip_v_ihl = (4 << 4) | (sizeof(t_ip_header) >> 2);
     g_ping->icmp_echo_header->ip_header.tos = 0;
@@ -84,15 +85,19 @@ void construct_icmp_packet()
     g_ping->icmp_echo_header->ip_header.checksum = 0;
     g_ping->icmp_echo_header->ip_header.src_ip = inet_addr(SRC_ADDRESS);
     g_ping->icmp_echo_header->ip_header.dest_ip = inet_addr(g_ping->ip_address);
-    g_ping->icmp_echo_header->ip_header.checksum = calculate_icmp_checksum((void *)&g_ping->icmp_echo_header->ip_header, sizeof(g_ping->icmp_echo_header->ip_header));
+
     g_ping->icmp_echo_header->icmp_header.type = ICMP_ECHO;
     g_ping->icmp_echo_header->icmp_header.checksum = 0;
     g_ping->icmp_echo_header->icmp_header.code = 0;
     g_ping->icmp_echo_header->icmp_header.identifier = getpid();
     g_ping->icmp_echo_header->icmp_header.sequence_number = g_ping->sequence_number;
-	
+	gettimeofday(&tv, NULL);
+    g_ping->icmp_echo_header->icmp_header.id_ts.its_otime = htonl(tv.tv_sec); // Store original timestamp
+    g_ping->icmp_echo_header->icmp_header.id_ts.its_rtime = 0; // You will fill this when you receive the reply
+    g_ping->icmp_echo_header->icmp_header.id_ts.its_ttime = 0; // You will fill this when you send the reply
+
+    g_ping->icmp_echo_header->ip_header.checksum = calculate_icmp_checksum((void *)g_ping->icmp_echo_header, sizeof(*g_ping->icmp_echo_header));
 	g_ping->icmp_echo_header->icmp_header.checksum= calculate_icmp_checksum((void *)&g_ping->icmp_echo_header->icmp_header, sizeof(g_ping->icmp_echo_header->icmp_header));
-    
     return ;
 }
 /** @Brief Send ICMP Packet
@@ -102,19 +107,13 @@ void construct_icmp_packet()
  */
 void send_icmp_packet()
 {
-    // char *buffer;
-
-
     int bytes_sent;
+
 	construct_icmp_packet();
-    // buffer = (char *)g_ping->icmp_echo_header + sizeof(g_ping->icmp_echo_header->ip_header);
-	// printf("%d\n", buffer[1]);
-   // printf("ip header: %ld | icmp header: %ld | data: %ld\n", sizeof(g_ping->icmp_echo_header->ip_header), sizeof(g_ping->icmp_echo_header->icmp_header), sizeof(g_ping->icmp_echo_header->data));
-	gettimeofday(&g_ping->send_time, NULL);
+  	gettimeofday(&g_ping->send_time, NULL);
 	bytes_sent = sendto(g_ping->sockfd, (char *)g_ping->icmp_echo_header, sizeof(*g_ping->icmp_echo_header), 0, (const struct sockaddr *)g_ping->dest_addr,  sizeof(*g_ping->dest_addr));
 	if (bytes_sent < 0)
 		show_errors("Error: can't send icmp packet!\n", EX_OSERR);
-	(void)bytes_sent;
     g_ping->ping_data->packets_transmitted++;
 	return ;
 }

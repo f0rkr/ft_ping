@@ -1,4 +1,4 @@
-FLAGS=-Wall -Werror -Wextra -fsanitize=address -g
+FLAGS=-Wall -Werror -Wextra  -g
 CC=gcc
 EXEC_NAME=ft_ping
 SRCS=srcs/main.c srcs/parsing/parse_clo.c srcs/handle_errors.c srcs/icmp_utils.c srcs/handle_time.c
@@ -9,7 +9,6 @@ all: $(EXEC_NAME)
 
 
 $(EXEC_NAME): $(SRCS)
-	echo $(IP_ADDRESS)
 	$(CC) $(FLAGS) $(SRCS) -D SRC_ADDRESS=\"10.0.2.15\" -I $(INCLUDES) -o $(EXEC_NAME) 
 
 clean:

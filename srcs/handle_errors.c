@@ -67,31 +67,40 @@ void 		formated_received_log()
 
 void print_hex_dump(const void *data, size_t size) {
     const unsigned char *buf = (const unsigned char *)data;
+	printf(" ");
     for (size_t i = 0; i < size; ++i) {
-        printf("%02X ", buf[i]);
-        if ((i + 1) % 16 == 0) {
-            printf("\n");
-        }
+        printf("%02x", buf[i]);
+		if (i % 2)
+			printf(" ");
     }
     printf("\n");
 }
+void print_ip_header(const t_ip_header *ip_header) {
+	char src_ip_str[INET_ADDRSTRLEN];
+    char dest_ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &ip_header->src_ip, src_ip_str, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &ip_header->dest_ip, dest_ip_str, INET_ADDRSTRLEN);
 
-void show_verbose(struct icmphdr *icmp_hd, struct ip *ip_header) {
-    struct icmphdr *icmp_header;
-    (void)icmp_hd;
-    
-    // Calculate the size of the IP header and the ICMP header
-    size_t ip_header_size = ip_header->ip_hl * 4; // IP header length in bytes
-    icmp_header = (struct icmphdr *)((char *)ip_header + ip_header_size);
+    printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst     Data\n");
+    printf("%2u %2u  %02X %04x %04x%4u %04x %2u  %02u %04x %4s  %4s\n",
+           ip_header->ip_v_ihl >> 4, ip_header->ip_v_ihl & 0xF,
+           ip_header->tos, ntohs(ip_header->total_length),
+           ntohs(ip_header->id), ntohs(ip_header->flags_offset) >> 13,
+           ntohs(ip_header->flags_offset) & 0x1FFF, ip_header->ttl,
+           ip_header->protocol, ntohs(ip_header->checksum),
+           src_ip_str,dest_ip_str);
+}
 
+void show_verbose(t_icmp_packet *icmp_header, t_ip_header *ip_header) {
+	// print_hex_dump(icmp_header, icmp_size);
     // Print IP Header
     printf("IP Hdr Dump:\n");
-    print_hex_dump(ip_header, ip_header_size);
-
+    print_hex_dump(ip_header, sizeof(*ip_header));
+	print_ip_header(ip_header);
     // Print ICMP Header
-    printf("ICMP: type %d, code %d, size %d, id 0x%X, seq 0x%X\n",
-           icmp_header->type, icmp_header->code, ntohs(ip_header->ip_len),
-           ntohs(icmp_header->un.echo.id), ntohs(icmp_header->un.echo.sequence));
+    printf("ICMP: type %d, code %d, size %d, id 0x%x, seq 0x%.4x\n",
+           icmp_header->type, icmp_header->code, ntohs(ip_header->total_length),
+           icmp_header->identifier, icmp_header->sequence_number);
 }
 
 /** @Brief Show Logs
@@ -102,30 +111,33 @@ void show_verbose(struct icmphdr *icmp_hd, struct ip *ip_header) {
 void show_logs()
 {
 	char sender_ip_str[INET_ADDRSTRLEN];
-    struct icmphdr *icmp_header;
-    struct ip *ip_header;
+    t_icmp_packet *icmp_header;
+    t_ip_header *ip_header;
 
-    ip_header = (struct ip *)g_ping->recv_buffer;
+    ip_header = (t_ip_header *)g_ping->recv_buffer;
 
-    inet_ntop(AF_INET, &(ip_header->ip_src), sender_ip_str, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(ip_header->src_ip), sender_ip_str, INET_ADDRSTRLEN);
 
-    icmp_header = (struct icmphdr *)((char *)ip_header + ip_header->ip_hl * 4);
-	if (icmp_header->type != ICMP_ECHOREPLY && g_ping->args->options & OPT_VERBOSE)
+    icmp_header = (t_icmp_packet *)((char *)ip_header + sizeof(*ip_header));
+	if (icmp_header->type != ICMP_ECHOREPLY)
 	{
 		switch (icmp_header->type) {
 			case ICMP_DEST_UNREACH:
-				printf("%d bytes from %s (%s): ", g_ping->bytes_received, sender_ip_str, sender_ip_str);
+				printf("%d bytes from _gateway (%s): ", g_ping->bytes_received, sender_ip_str);
 				printf("Destination Net Unreachable\n");
-				show_verbose(icmp_header, ip_header);
 				break;
 			// Add more cases for other ICMP types as needed
+			case ICMP_ECHO:
+				if (g_ping->args->options & OPT_VERBOSE)
+					show_verbose(icmp_header, ip_header);
+				g_ping->ping_data->packets_transmitted--;
 			default:
 		}
-	} else 
+	} else if (icmp_header->type == ICMP_ECHOREPLY) 
 	{
 		g_ping->rtt = (g_ping->receive_time.tv_sec - g_ping->send_time.tv_sec) * 1000.0 + (g_ping->receive_time.tv_usec - g_ping->send_time.tv_usec) / 1000.0;
 		printf("%d bytes from %s: icmp_seq=%d ", g_ping->bytes_received,sender_ip_str, g_ping->sequence_number++);
-		printf("ttl=%d ", ip_header->ip_ttl);
+		printf("ttl=%d ", ip_header->ttl);
 		printf("time=%.3f ms\n", g_ping->rtt);
 		if (icmp_header->type == ICMP_ECHOREPLY && icmp_header->code == 0) {
         	g_ping->ping_data->packets_received++;

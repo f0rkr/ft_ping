@@ -62,6 +62,13 @@ typedef struct s_ping_data {
     struct timeval end_time;
 }               t_ping_data;
 
+typedef struct s_id_ts
+{
+    u_int32_t its_otime;
+    u_int32_t its_rtime;
+    u_int32_t its_ttime;
+} t_id_ts;
+
 /** @brief ICMP packet struct
  * Constructing ICMP packet header
  *
@@ -82,6 +89,7 @@ typedef struct s_icmp_packet
     uint16_t    checksum;  /* ICMP Checksum */
     uint16_t    identifier; /* Identifier for this ping process */
     uint16_t    sequence_number; /* Sequence number for this ping */
+    uint32_t    id_ts;
 }   t_icmp_packet;
 
 /** @brief ICMP echo packet struct
@@ -94,7 +102,7 @@ typedef struct s_echo_packet
 {
     t_ip_header     ip_header;
     t_icmp_packet   icmp_header;
-    char            data[PING_PACKET_SIZE - sizeof(t_ip_header) - sizeof(t_icmp_packet)];
+    char            data[PING_PACKET_SIZE - sizeof(t_icmp_packet)];
 }               t_echo_packet;
 
 typedef struct s_ping
@@ -105,7 +113,7 @@ typedef struct s_ping
     int                 bytes_received;
     int                 sequence_number;
     char                *ip_address;
-    char                recv_buffer[PING_PACKET_SIZE * 100];
+    char                recv_buffer[PING_PACKET_SIZE*100];
     t_args              *args;
     uint8_t             routine_loop;
     t_echo_packet       *icmp_echo_header;

@@ -65,9 +65,9 @@ void    icmp_echo()
     create_socket();
     setup_destination_address();
     if (g_ping->args->options & OPT_VERBOSE)
-        printf("PING %s (%s): %ld data bytes, id 0x%x = %d\n", g_ping->args->hostname, g_ping->ip_address, sizeof(*g_ping->icmp_echo_header), getpid(), getpid());
+        printf("PING %s (%s): %d data bytes, id 0x%x = %d\n", g_ping->args->hostname, g_ping->ip_address, PING_PACKET_SIZE, getpid(), getpid());
     else
-        printf("PING %s (%s): %ld data bytes\n", g_ping->args->hostname, g_ping->ip_address, sizeof(*g_ping->icmp_echo_header));
+        printf("PING %s (%s): %d data bytes\n", g_ping->args->hostname, g_ping->ip_address, PING_PACKET_SIZE);
     gettimeofday(&g_ping->ping_data->start_time, NULL);
     while (g_ping->routine_loop) {
         send_icmp_packet();
@@ -81,7 +81,7 @@ void    icmp_echo()
             g_ping->icmp_echo_header = NULL;
         }
         update_rtt_stats();
-        usleep(8900*100);
+        usleep(8000*100);
     }
     show_statistics();
 	collect_memory();
@@ -115,7 +115,7 @@ void    init_ping_struct()
     g_ping->routine_loop = 1;
     g_ping->icmp_echo_header = NULL;
     g_ping->dest_addr = NULL;
-    g_ping->sequence_number = 1;
+    g_ping->sequence_number = 0;
     g_ping->ttl = 114;
     g_ping->rtt = 0;
     g_ping->alarm = 0;
@@ -142,7 +142,6 @@ int     main(int argc, char **argv) {
     parse_clo(argc, argv);
     if (getuid() != 0)
         show_errors("ft_ping: Lacking privilige for icmp socket.\n", EX_NOPERM);
-    //printf("hostname: %s, verbos: %d, help: %d\n", args->hostname, args->verbose, args->help);
     /* TO-DO: Handling signales */
     signal(SIGINT, (void *)&interrupt_handler);
     signal(SIGALRM, (void *)&interrupt_handler);
