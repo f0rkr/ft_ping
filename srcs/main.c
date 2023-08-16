@@ -99,7 +99,6 @@ void    icmp_echo()
  */
 void    init_ping_struct()
 {
-    printf("%s\n", SRC_ADDRESS);
     g_ping = (t_ping *)malloc(sizeof(t_ping));
     if (g_ping == NULL)
         show_errors("ERROR: can't allocate memory!", EX_OSERR);

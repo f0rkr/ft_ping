@@ -64,6 +64,36 @@ void 		formated_received_log()
 {
 
 }
+
+void print_hex_dump(const void *data, size_t size) {
+    const unsigned char *buf = (const unsigned char *)data;
+    for (size_t i = 0; i < size; ++i) {
+        printf("%02X ", buf[i]);
+        if ((i + 1) % 16 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}
+
+void show_verbose(struct icmphdr *icmp_hd, struct ip *ip_header) {
+    struct icmphdr *icmp_header;
+    (void)icmp_hd;
+    
+    // Calculate the size of the IP header and the ICMP header
+    size_t ip_header_size = ip_header->ip_hl * 4; // IP header length in bytes
+    icmp_header = (struct icmphdr *)((char *)ip_header + ip_header_size);
+
+    // Print IP Header
+    printf("IP Hdr Dump:\n");
+    print_hex_dump(ip_header, ip_header_size);
+
+    // Print ICMP Header
+    printf("ICMP: type %d, code %d, size %d, id 0x%X, seq 0x%X\n",
+           icmp_header->type, icmp_header->code, ntohs(ip_header->ip_len),
+           ntohs(icmp_header->un.echo.id), ntohs(icmp_header->un.echo.sequence));
+}
+
 /** @Brief Show Logs
  * Displays logs related to the ICMP packet exchange.
  *
@@ -71,27 +101,36 @@ void 		formated_received_log()
  */
 void show_logs()
 {
-	char ip_str[INET_ADDRSTRLEN];
-   	char sender_ip_str[INET_ADDRSTRLEN];
-    // struct icmphdr *icmp_header;
+	char sender_ip_str[INET_ADDRSTRLEN];
+    struct icmphdr *icmp_header;
     struct ip *ip_header;
 
-	ip_header = (struct ip *)g_ping->recv_buffer;
+    ip_header = (struct ip *)g_ping->recv_buffer;
 
-	inet_ntop(AF_INET, &(ip_header->ip_src), sender_ip_str, INET_ADDRSTRLEN);
-	inet_ntop(AF_INET, &(ip_header->ip_src), ip_str, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(ip_header->ip_src), sender_ip_str, INET_ADDRSTRLEN);
 
-	// icmp_header = (struct icmphdr *)(g_ping->recv_buffer + sizeof(struct ip));
-	// if (icmp_header->type == ICMP_ECHOREPLY && icmp_header->code == 0) {
-    //     g_ping->ping_data->packets_received++;
-    // }
-	g_ping->rtt = (g_ping->receive_time.tv_sec - g_ping->send_time.tv_sec) * 1000.0 + (g_ping->receive_time.tv_usec - g_ping->send_time.tv_usec) / 1000.0;
-	printf("%d bytes from %s: icmp_seq=%d ", g_ping->bytes_received,ip_str, g_ping->sequence_number++);
-	// if (g_ping->args->verbose)
-	// 	printf("ident=%d ",g_ping->icmp_echo_header->icmp_header.identifier);
-	printf("ttl=%d ", ip_header->ip_ttl);
-	printf("time=%.3f ms\n", g_ping->rtt);
-	g_ping->ping_data->packets_received++;
+    icmp_header = (struct icmphdr *)((char *)ip_header + ip_header->ip_hl * 4);
+	if (icmp_header->type != ICMP_ECHOREPLY && g_ping->args->options & OPT_VERBOSE)
+	{
+		switch (icmp_header->type) {
+			case ICMP_DEST_UNREACH:
+				printf("%d bytes from %s (%s): ", g_ping->bytes_received, sender_ip_str, sender_ip_str);
+				printf("Destination Net Unreachable\n");
+				show_verbose(icmp_header, ip_header);
+				break;
+			// Add more cases for other ICMP types as needed
+			default:
+		}
+	} else 
+	{
+		g_ping->rtt = (g_ping->receive_time.tv_sec - g_ping->send_time.tv_sec) * 1000.0 + (g_ping->receive_time.tv_usec - g_ping->send_time.tv_usec) / 1000.0;
+		printf("%d bytes from %s: icmp_seq=%d ", g_ping->bytes_received,sender_ip_str, g_ping->sequence_number++);
+		printf("ttl=%d ", ip_header->ip_ttl);
+		printf("time=%.3f ms\n", g_ping->rtt);
+		if (icmp_header->type == ICMP_ECHOREPLY && icmp_header->code == 0) {
+        	g_ping->ping_data->packets_received++;
+   		}
+	}
 	return ;
 }
 

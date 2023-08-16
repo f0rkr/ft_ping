@@ -40,8 +40,7 @@ typedef struct s_args {
  * @brief IP Header struct
 */
 typedef struct s_ip_header {
-	uint8_t ip_v;
-    uint8_t ip_hl;
+	uint8_t ip_v_ihl;
 	uint8_t tos;
 	uint16_t total_length;
 	uint16_t id;
@@ -49,8 +48,8 @@ typedef struct s_ip_header {
 	uint8_t  ttl;
 	uint8_t	 protocol;
 	uint16_t checksum;
-	struct	 in_addr	src_ip;
-	struct	 in_addr	dest_ip;
+	uint32_t	src_ip;
+	uint32_t	dest_ip;
 }		t_ip_header;
 
 typedef struct s_ping_data {
@@ -93,7 +92,7 @@ typedef struct s_icmp_packet
 */
 typedef struct s_echo_packet
 {
-    t_ip_header	    ip_header;
+    t_ip_header     ip_header;
     t_icmp_packet   icmp_header;
     char            data[PING_PACKET_SIZE - sizeof(t_ip_header) - sizeof(t_icmp_packet)];
 }               t_echo_packet;
