@@ -132,10 +132,12 @@ void show_logs()
 	char *host_address;
     t_icmp_packet *icmp_header;
     t_ip_header *ip_header;
-
+ 
     ip_header = (t_ip_header *)g_ping->recv_buffer;
     inet_ntop(AF_INET, &(ip_header->src_ip), sender_ip_str, INET_ADDRSTRLEN);
-	host_address = perform_reverse_dns(ip_header);
+	host_address = strdup(sender_ip_str);
+	if (!(g_ping->args->options & OPT_NUMERIC))
+		host_address = perform_reverse_dns(ip_header);
     icmp_header = (t_icmp_packet *)((char *)ip_header + sizeof(*ip_header));
 	if (icmp_header->type != ICMP_ECHOREPLY)
 	{
@@ -156,9 +158,12 @@ void show_logs()
 	else if (icmp_header->type == ICMP_ECHOREPLY) 
 	{
 		g_ping->rtt = (g_ping->receive_time.tv_sec - g_ping->send_time.tv_sec) * 1000.0 + (g_ping->receive_time.tv_usec - g_ping->send_time.tv_usec) / 1000.0;
-		printf("%ld bytes from %s: icmp_seq=%d ", sizeof(*icmp_header),sender_ip_str, icmp_header->sequence_number);
-		printf("ttl=%d ", ip_header->ttl);
-		printf("time=%.3f ms\n", g_ping->rtt);
+		if (!(g_ping->args->options & OPT_QUIET))
+		{
+			printf("%ld bytes from %s: icmp_seq=%d ", sizeof(*icmp_header),sender_ip_str, icmp_header->sequence_number);
+			printf("ttl=%d ", ip_header->ttl);
+			printf("time=%.3f ms\n", g_ping->rtt);
+		}
 		if (icmp_header->type == ICMP_ECHOREPLY && icmp_header->code == 0) {
         	g_ping->ping_data->packets_received++;
    		}

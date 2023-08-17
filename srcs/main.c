@@ -82,6 +82,9 @@ void    setup_destination_address()
 */
 void    icmp_echo()
 {
+    int counter;
+
+    counter = g_ping->args->count;
     create_socket();
     setup_destination_address();
     if (g_ping->args->options & OPT_VERBOSE)
@@ -89,7 +92,7 @@ void    icmp_echo()
     else
         printf("PING %s (%s): %d data bytes\n", g_ping->args->hostname, g_ping->ip_address, PING_PACKET_SIZE);
     gettimeofday(&g_ping->ping_data->start_time, NULL);
-    while (g_ping->routine_loop && g_ping->ping_data->packets_transmitted != 3) {
+    while (g_ping->routine_loop) {
         send_icmp_packet();
 		recv_icmp_packet();
         if (!g_ping->alarm)
@@ -101,6 +104,12 @@ void    icmp_echo()
             g_ping->icmp_echo_header = NULL;
         }
         update_rtt_stats();
+        if (g_ping->args->count > 0)
+        {
+            counter--;
+            if (counter == 0)
+                break;
+        }
         usleep(8000*100);
     }
     show_statistics();

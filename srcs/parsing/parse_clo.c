@@ -18,7 +18,7 @@ t_args  *init_args( void )
     args->options = 0;
     args->ttl = DEFAULT_TTL;
     args->timeout = 1;
-    args->packet_size = PING_PACKET_SIZE;
+    args->quite = 0;
     args->count = 0;
     args->count_valid = 0;
     return (args);
@@ -33,7 +33,7 @@ void    check_args_validity()
     }
 }
 
-int     read_value(const char *string, int option)
+time_t     read_value(const char *string, int option)
 {
     long value;
     char *endptr;
@@ -43,24 +43,19 @@ int     read_value(const char *string, int option)
         show_errors(concatenate_strings("ft_ping: invalid value (`%s' near `%s')\n", string,string), EXIT_FAILURE);
     if (errno == EINVAL)
         show_errors(concatenate_strings("Invalid conversion: %s\n", string), EXIT_FAILURE);
-    if (options == OPT_TTL)
+    if (option == OPT_TTL)
     {
         if ((errno == ERANGE && string[0] != '-') || value >= 256)
             show_errors(concatenate_strings("ping2: option value too big: %s\n", string), EXIT_FAILURE);
         else if (errno == ERANGE || value <= 0)
             show_errors(concatenate_strings("ping2: option value too small: %s\n", string), EXIT_FAILURE);
     }
-    else if (options == OPT_TIMEOUT)
+    else if (option == OPT_TIMEOUT)
     {
-        if (errno == ERANGE || (value < 0 && value > INT32_MAX))
+        if (errno == ERANGE || value < 0 || value > 100000000000)
             show_errors(concatenate_strings("ping2: option value too big: %s\n", string), EXIT_FAILURE);
         else if (value == 0)
             show_errors(concatenate_strings("ping2: option value too small: %s\n", string), EXIT_FAILURE);
-    }
-    else if (options == OPT_PACKETSIZE)
-    {
-        if (errno == ERANGE || (value >= 65400 && value < 0))
-            show_errors(concatenate_strings("ping2: option value too big: %s\n", value), EXIT_FAILURE);
     }
     return (value);
 }
@@ -89,7 +84,7 @@ void    parse_clo(int len, char *clo_args[]) {
             g_ping->args->options |= OPT_COUNT;
             if (!clo_args[i + 1])
                 show_errors("ft_ping: option requires an argument -- 'c'\n", EX_USAGE);
-            g_ping->args->count = read_value(clo_args[i + 1]);
+            g_ping->args->count = read_value(clo_args[i + 1], OPT_COUNT);
             i++;
         }
         else if (strcmp(clo_args[i], "-n") == 0)
@@ -99,7 +94,7 @@ void    parse_clo(int len, char *clo_args[]) {
             g_ping->args->options |= OPT_TTL;
             if (!clo_args[i + 1])
                 show_errors("ft_ping: option '--ttl' requires an argument\n", EX_USAGE);
-            g_ping->args->ttl = read_value(clo_args[i + 1]);
+            g_ping->args->ttl = read_value(clo_args[i + 1], OPT_TTL);
             i++;
         }
         else if (strcmp(clo_args[i], "-w") == 0)
@@ -107,17 +102,11 @@ void    parse_clo(int len, char *clo_args[]) {
             g_ping->args->options |= OPT_TIMEOUT;
             if (!clo_args[i + 1])
                 show_errors("ft_ping: option requires an argument -- 'w'\n", EX_USAGE);
-            g_ping->args->timeout = read_value(clo_args[i + 1]);
+            g_ping->args->timeout = read_value(clo_args[i + 1], OPT_TIMEOUT);
             i++;
         }
-        else if (strcmp(clo_args[i], "-s") == 0)
-        {
-            g_ping->args->options |= OPT_PACKETSIZE;
-            if (!clo_args[i + 1])
-                show_errors("ft_ping: option requires an argument -- 's'\n", EX_USAGE);
-            g_ping->args->packet_size = read_value(clo_args[i + 1], OPT_PACKETSIZE);
-            i++;
-        }
+        else if (strcmp(clo_args[i], "-q") == 0)
+            g_ping->args->options |= OPT_QUIET;
         else if (clo_args[i][0] != '-' && !g_ping->args->hostname)
             g_ping->args->hostname = strdup(clo_args[i]);
         else if (clo_args[i][0] == '-')

@@ -20,16 +20,20 @@
 # define PING_PACKET_SIZE   56
 # define DEFAULT_TTL        64
 
+
+# define PING_PACKET_SIZE   56
+# define DEFAULT_TTL        64
+
 # define EX_HELP        0
 
-# define OPT_HELP       1
-# define OPT_VERBOSE    2
+#define OPT_HELP     (1 << 0)
+#define OPT_VERBOSE  (1 << 1)
+#define OPT_COUNT    (1 << 2)
+#define OPT_TTL      (1 << 3)
+#define OPT_NUMERIC  (1 << 4)
+#define OPT_TIMEOUT  (1 << 5)
+#define OPT_QUIET    (1 << 6)
 
-# define OPT_COUNT      3
-# define OPT_TTL        4
-# define OPT_NUMERIC    5
-# define OPT_TIMEOUT    6
-# define OPT_PACKETSIZE 7
 
 
 /**
@@ -40,13 +44,12 @@ typedef struct s_args {
     char	*hostname;
     int     options;
     int     ttl;
-    int     timeout;
-    int     packet_size;
+    time_t     timeout;
+    int     quite;
     int     count;
     int     count_valid;
     int     invalid_option;
 } t_args;
-
 /**
  * @brief IP Header struct
 */
@@ -106,7 +109,7 @@ typedef struct s_icmp_packet
     uint16_t        checksum;  /* ICMP Checksum */
     uint16_t        identifier; /* Identifier for this ping process */
     uint16_t        sequence_number; /* Sequence number for this ping */
-    char            *data;
+    char            data[PING_PACKET_SIZE];
 }   t_icmp_packet;
 
 /** @brief ICMP echo packet struct

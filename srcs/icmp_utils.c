@@ -14,7 +14,7 @@ void create_socket()
 	
     bd = 1;
     on = 1;
-    timeout.tv_sec = 1;
+    timeout.tv_sec = g_ping->args->timeout;
     timeout.tv_usec = 0;
 
 	/* TO-DO: Create raw socket */
@@ -79,8 +79,7 @@ uint16_t calculate_icmp_checksum(void *data, size_t length)
 void construct_icmp_packet()
 {   
     g_ping->icmp_echo_header = (t_echo_packet *)malloc(sizeof(t_echo_packet));
-   	g_ping->icmp_echo_header->icmp_header.data = (char *)malloc(sizeof(char) * g_ping->args->packet_size);
-    memset((void *)g_ping->icmp_echo_header->icmp_header.data, 0x00, g_ping->args->packet_size);
+    memset((void *)g_ping->icmp_echo_header->icmp_header.data, 0x00, sizeof(g_ping->icmp_echo_header->icmp_header.data));
 
     /* TO-DO: Constructing IP header */
     g_ping->icmp_echo_header->ip_header.ip_v_ihl = (4 << 4) | (sizeof(t_ip_header) >> 2);
@@ -88,7 +87,7 @@ void construct_icmp_packet()
     g_ping->icmp_echo_header->ip_header.total_length = htons(PING_PACKET_SIZE);
     g_ping->icmp_echo_header->ip_header.id = htons(getpid());
     g_ping->icmp_echo_header->ip_header.flags_offset = 0;
-    g_ping->icmp_echo_header->ip_header.ttl = g_ping->ttl;
+    g_ping->icmp_echo_header->ip_header.ttl = g_ping->args->ttl;
     g_ping->icmp_echo_header->ip_header.protocol = IPPROTO_ICMP;
     g_ping->icmp_echo_header->ip_header.checksum = 0;
     g_ping->icmp_echo_header->ip_header.src_ip = inet_addr(SRC_ADDRESS);
