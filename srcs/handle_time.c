@@ -14,3 +14,9 @@ void update_rtt_stats() {
     }
     g_ping->ping_data->rtt_total += g_ping->rtt;
 }
+
+void    show_help()
+{
+    printf("usage: ft_ping [-v?] [-v Verbose] [-? Help]\n");
+    return ;
+}

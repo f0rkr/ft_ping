@@ -25,11 +25,11 @@ void create_socket()
     /* TO-DO: Enabling Manual IP header constructing + Setting icmp timeout + Enabling Broadcast error */
     if (setsockopt(g_ping->sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) == -1)
         show_errors("Error: setsockopt failed!\n", EX_OSERR);
-    if (setsockopt(g_ping->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+    if (setsockopt(g_ping->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
         show_errors("Error: setsockopt failed!\n", EX_OSERR);
-    if (setsockopt(g_ping->sockfd, SOL_SOCKET, SO_BROADCAST, &bd, sizeof(bd))==-1)
+    if (setsockopt(g_ping->sockfd, SOL_SOCKET, SO_BROADCAST, &bd, sizeof(bd)) == -1)
         show_errors("Error: setsockopt failed!\n", EX_OSERR);
-	return;
+    return ;
 }
 
 /**
@@ -79,7 +79,9 @@ uint16_t calculate_icmp_checksum(void *data, size_t length)
 void construct_icmp_packet()
 {   
     g_ping->icmp_echo_header = (t_echo_packet *)malloc(sizeof(t_echo_packet));
-   
+   	g_ping->icmp_echo_header->icmp_header.data = (char *)malloc(sizeof(char) * g_ping->args->packet_size);
+    memset((void *)g_ping->icmp_echo_header->icmp_header.data, 0x00, g_ping->args->packet_size);
+
     /* TO-DO: Constructing IP header */
     g_ping->icmp_echo_header->ip_header.ip_v_ihl = (4 << 4) | (sizeof(t_ip_header) >> 2);
     g_ping->icmp_echo_header->ip_header.tos = 0;
@@ -99,10 +101,9 @@ void construct_icmp_packet()
     g_ping->icmp_echo_header->icmp_header.code = 0;
     g_ping->icmp_echo_header->icmp_header.identifier = getpid();
     g_ping->icmp_echo_header->icmp_header.sequence_number = g_ping->sequence_number++;
-    g_ping->icmp_echo_header->icmp_header.checksum= calculate_icmp_checksum((void *)&g_ping->icmp_echo_header->icmp_header, sizeof(g_ping->icmp_echo_header->icmp_header));
+    g_ping->icmp_echo_header->icmp_header.checksum= calculate_icmp_checksum((void *)g_ping->icmp_echo_header, sizeof(*g_ping->icmp_echo_header));
 
     /* TO-DO: Filling the payload data */
-	memset((void *)g_ping->icmp_echo_header->icmp_header.data, 0x00, sizeof(g_ping->icmp_echo_header->icmp_header.data));
     return ;
 }
 
@@ -115,9 +116,14 @@ void send_icmp_packet()
 {
     int bytes_sent;
 
+    /* TO-DO: Construct ICMP packet */
 	construct_icmp_packet();
+
+    /* Set the time to calculate the roundtrip */
   	gettimeofday(&g_ping->send_time, NULL);
-	bytes_sent = sendto(g_ping->sockfd, (char *)g_ping->icmp_echo_header, sizeof(*g_ping->icmp_echo_header), 0, (const struct sockaddr *)g_ping->dest_addr,  sizeof(*g_ping->dest_addr));
+	
+    /* TO-DO: Send the ICMP packet to the destinated host */
+    bytes_sent = sendto(g_ping->sockfd, (char *)g_ping->icmp_echo_header, sizeof(*g_ping->icmp_echo_header), 0, (const struct sockaddr *)g_ping->dest_addr,  sizeof(*g_ping->dest_addr));
 	if (bytes_sent < 0)
 		show_errors("Error: can't send icmp packet!\n", EX_OSERR);
     g_ping->ping_data->packets_transmitted++;

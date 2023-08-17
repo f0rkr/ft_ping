@@ -17,16 +17,20 @@
 # include <errno.h>
 # include <stdarg.h>
 
-# define PING_PACKET_SIZE 56
+# define PING_PACKET_SIZE   56
 # define DEFAULT_TTL        64
+
+# define EX_HELP        0
 
 # define OPT_HELP       1
 # define OPT_VERBOSE    2
-# define OPT_FLOOD      3
+
+# define OPT_COUNT      3
 # define OPT_TTL        4
 # define OPT_NUMERIC    5
-# define OPT_DEADLINE   6
+# define OPT_TIMEOUT    6
 # define OPT_PACKETSIZE 7
+
 
 /**
  * @brief arguments struct
@@ -35,6 +39,11 @@
 typedef struct s_args {
     char	*hostname;
     int     options;
+    int     ttl;
+    int     timeout;
+    int     packet_size;
+    int     count;
+    int     count_valid;
     int     invalid_option;
 } t_args;
 
@@ -97,7 +106,7 @@ typedef struct s_icmp_packet
     uint16_t        checksum;  /* ICMP Checksum */
     uint16_t        identifier; /* Identifier for this ping process */
     uint16_t        sequence_number; /* Sequence number for this ping */
-    char            data[PING_PACKET_SIZE];
+    char            *data;
 }   t_icmp_packet;
 
 /** @brief ICMP echo packet struct
@@ -151,4 +160,5 @@ void    ft_bzero(void *s, size_t n);
 void    update_rtt_stats();
 void    collect_memory();
 void    construct_icmp_packet();
+void    show_help();
 #endif

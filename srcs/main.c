@@ -38,16 +38,37 @@ void    interrupt_handler(int sig)
  */
 void    setup_destination_address()
 {
+    /* TO-DO: Check if the hostname is a valid IP address*/
+    int is_valid_ip;
+    struct in_addr addr;
     struct addrinfo *res;
     char ip_str[INET_ADDRSTRLEN];
 
-    if (getaddrinfo(g_ping->args->hostname, NULL, NULL, &res) != 0)
-        show_errors(concatenate_strings("ft_ping: cannot resolve %s: Unknown host\n", g_ping->args->hostname), EX_NOHOST);
-    g_ping->dest_addr = (struct sockaddr_in *)res->ai_addr;
-    /* TO-DO: Extract the ipv4 address */
-    inet_ntop(AF_INET, &(g_ping->dest_addr->sin_addr), ip_str, INET_ADDRSTRLEN);
-    g_ping->ip_address = strdup(ip_str);
-	freeaddrinfo(res);
+    is_valid_ip = inet_pton(AF_INET, g_ping->args->hostname, &addr);
+    if (is_valid_ip)
+    {
+        g_ping->dest_addr = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
+        if (g_ping->dest_addr == NULL)
+            show_errors("ERROR: can't allocate memory!\n", EX_OSERR);
+
+        g_ping->dest_addr->sin_family = AF_INET;
+        g_ping->dest_addr->sin_port = 0;  // You can set the port if needed
+        inet_pton(AF_INET, g_ping->args->hostname, &g_ping->dest_addr->sin_addr);
+        g_ping->ip_address = strdup(g_ping->args->hostname);
+    } else
+    {
+        if (getaddrinfo(g_ping->args->hostname, NULL, NULL, &res) != 0)
+            show_errors("ft_ping: unknown host\n", EXIT_FAILURE);
+        g_ping->dest_addr = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
+        if (g_ping->dest_addr == NULL) 
+            show_errors("ERROR: can't allocate memory!\n", EX_OSERR);
+
+        memcpy(g_ping->dest_addr, res->ai_addr, sizeof(struct sockaddr_in));
+        /* TO-DO: Extract the ipv4 address */
+        inet_ntop(AF_INET, &(g_ping->dest_addr->sin_addr), ip_str, INET_ADDRSTRLEN);
+        g_ping->ip_address = strdup(ip_str);
+        freeaddrinfo(res);
+    }
     return ;
 }
 
@@ -68,7 +89,7 @@ void    icmp_echo()
     else
         printf("PING %s (%s): %d data bytes\n", g_ping->args->hostname, g_ping->ip_address, PING_PACKET_SIZE);
     gettimeofday(&g_ping->ping_data->start_time, NULL);
-    while (g_ping->routine_loop) {
+    while (g_ping->routine_loop && g_ping->ping_data->packets_transmitted != 3) {
         send_icmp_packet();
 		recv_icmp_packet();
         if (!g_ping->alarm)
@@ -100,10 +121,10 @@ void    init_ping_struct()
 {
     g_ping = (t_ping *)malloc(sizeof(t_ping));
     if (g_ping == NULL)
-        show_errors("ERROR: can't allocate memory!", EX_OSERR);
+        show_errors("ERROR: can't allocate memory!\n", EX_OSERR);
     g_ping->ping_data = (t_ping_data *)malloc(sizeof(t_ping_data));
     if (g_ping->ping_data == NULL)
-        show_errors("ERROR: can't allocate memory!", EX_OSERR);
+        show_errors("ERROR: can't allocate memory!\n", EX_OSERR);
     g_ping->ping_data->packets_received = 0;
     g_ping->ping_data->packets_transmitted = 0;
     g_ping->ping_data->rtt_min = 0;
@@ -140,7 +161,7 @@ int     main(int argc, char **argv) {
     /* TO-DO: Parsing the command line arguments */
     parse_clo(argc, argv);
     if (getuid() != 0)
-        show_errors("ft_ping: Lacking privilige for icmp socket.\n", EX_NOPERM);
+        show_errors("ft_ping: Lacking privilige for icmp socket.\n", EXIT_FAILURE);
     /* TO-DO: Handling signales */
     signal(SIGINT, (void *)&interrupt_handler);
     signal(SIGALRM, (void *)&interrupt_handler);

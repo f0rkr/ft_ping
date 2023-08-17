@@ -56,7 +56,7 @@ char *concatenate_strings(const char *format, ...) {
  */
  void   show_usage( void )
 {
-     printf("usage: ft_ping [-v?] [-v Verbose] [-? Help]\n");
+     printf("Try './ft_ping -?' or 'ping2 --help' for more information.\n");
      return ;
 }
 
@@ -75,6 +75,7 @@ void print_hex_dump(const void *data, size_t size) {
     }
     printf("\n");
 }
+
 void print_ip_header(const t_ip_header *ip_header) {
 	char src_ip_str[INET_ADDRSTRLEN];
     char dest_ip_str[INET_ADDRSTRLEN];
@@ -103,6 +104,23 @@ void show_verbose(t_icmp_packet *icmp_header, t_ip_header *ip_header) {
            icmp_header->identifier, icmp_header->sequence_number);
 }
 
+char	*perform_reverse_dns(t_ip_header *ip_header)
+{
+	struct sockaddr_in sa;
+    char *host;
+
+	host = (char *)malloc(sizeof(char) * 1024);
+	if (host == NULL)
+		show_errors("ERROR: can't allocate memory!\n", EX_OSERR);
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_family = AF_INET;
+	sa.sin_addr.s_addr = ip_header->src_ip;
+   	getnameinfo((struct sockaddr *)&sa, sizeof(sa), host, 1024, NULL, 0, 0);
+    
+	return (host);
+}
+
 /** @Brief Show Logs
  * Displays logs related to the ICMP packet exchange.
  *
@@ -111,19 +129,19 @@ void show_verbose(t_icmp_packet *icmp_header, t_ip_header *ip_header) {
 void show_logs()
 {
 	char sender_ip_str[INET_ADDRSTRLEN];
+	char *host_address;
     t_icmp_packet *icmp_header;
     t_ip_header *ip_header;
 
     ip_header = (t_ip_header *)g_ping->recv_buffer;
-
     inet_ntop(AF_INET, &(ip_header->src_ip), sender_ip_str, INET_ADDRSTRLEN);
-
+	host_address = perform_reverse_dns(ip_header);
     icmp_header = (t_icmp_packet *)((char *)ip_header + sizeof(*ip_header));
 	if (icmp_header->type != ICMP_ECHOREPLY)
 	{
 		switch (icmp_header->type) {
 			case ICMP_DEST_UNREACH:
-				printf("%ld bytes from _gateway (%s): ", sizeof(*icmp_header) + sizeof(*ip_header) + sizeof(icmp_header), sender_ip_str);
+				printf("%ld bytes from %s (%s): ", sizeof(*icmp_header) + sizeof(*ip_header) + sizeof(icmp_header), host_address, sender_ip_str);
 				printf("Destination Net Unreachable\n");
 				break;
 			// Add more cases for other ICMP types as needed
@@ -131,9 +149,11 @@ void show_logs()
 				if (g_ping->args->options & OPT_VERBOSE)
 					show_verbose(icmp_header, ip_header);
 				g_ping->ping_data->packets_transmitted--;
+				break;
 			default:
 		}
-	} else if (icmp_header->type == ICMP_ECHOREPLY) 
+	} 
+	else if (icmp_header->type == ICMP_ECHOREPLY) 
 	{
 		g_ping->rtt = (g_ping->receive_time.tv_sec - g_ping->send_time.tv_sec) * 1000.0 + (g_ping->receive_time.tv_usec - g_ping->send_time.tv_usec) / 1000.0;
 		printf("%ld bytes from %s: icmp_seq=%d ", sizeof(*icmp_header),sender_ip_str, icmp_header->sequence_number);
@@ -143,6 +163,8 @@ void show_logs()
         	g_ping->ping_data->packets_received++;
    		}
 	}
+	free(host_address);
+	host_address = NULL;
 	return ;
 }
 
@@ -162,6 +184,11 @@ void    collect_memory()
 		{
 			free(g_ping->icmp_echo_header);
 			g_ping->icmp_echo_header = NULL;
+		}
+		if (g_ping->dest_addr)
+		{
+			free(g_ping->dest_addr);
+			g_ping->dest_addr = NULL;
 		}
 		if (g_ping->args->hostname)
 		{
@@ -204,11 +231,13 @@ void    show_errors(char *error_string, int error_number)
 {
 	collect_memory();
 	// TO-DO: print the error string
-	dprintf(2, "%s\n", error_string);
+	dprintf(2, "%s", error_string);
 	// free(error_string);
 	// error_string = NULL;
 	if (error_number == EX_USAGE)
 		show_usage();
+	if (error_number == EX_HELP)
+		show_help();
 	exit(error_number);
 }
 
@@ -233,7 +262,7 @@ void show_statistics()
 	if (g_ping->ping_data->packets_received > 0)
 	{
 		avg_rtt = g_ping->ping_data->rtt_total / g_ping->ping_data->packets_received;
-		printf("routine_trip min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n", g_ping->ping_data->rtt_min, avg_rtt, g_ping->ping_data->rtt_max, 0.147);
+		printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", g_ping->ping_data->rtt_min, avg_rtt, g_ping->ping_data->rtt_max, 0.147);
 	}
 	return ;
 }
