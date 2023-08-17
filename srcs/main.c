@@ -20,7 +20,6 @@ void    interrupt_handler(int sig)
         show_statistics();
         collect_memory();
         exit(0);
-        // Calculate total time in milliseconds
     }
     if (sig == SIGALRM)
         g_ping->alarm = 0;
@@ -116,7 +115,7 @@ void    init_ping_struct()
     g_ping->icmp_echo_header = NULL;
     g_ping->dest_addr = NULL;
     g_ping->sequence_number = 0;
-    g_ping->ttl = 114;
+    g_ping->ttl = DEFAULT_TTL;
     g_ping->rtt = 0;
     g_ping->alarm = 0;
     g_ping->bytes_received = 0;

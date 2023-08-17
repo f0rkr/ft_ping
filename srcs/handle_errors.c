@@ -82,7 +82,7 @@ void print_ip_header(const t_ip_header *ip_header) {
     inet_ntop(AF_INET, &ip_header->dest_ip, dest_ip_str, INET_ADDRSTRLEN);
 
     printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst     Data\n");
-    printf("%2u %2u  %02X %04x %04x%4u %04x %2u  %02u %04x %4s  %4s\n",
+    printf("%2u %2u  %02X %04x %04x%4u %04x  %02x  %02u %04x %4s  %4s\n",
            ip_header->ip_v_ihl >> 4, ip_header->ip_v_ihl & 0xF,
            ip_header->tos, ntohs(ip_header->total_length),
            ntohs(ip_header->id), ntohs(ip_header->flags_offset) >> 13,
@@ -123,7 +123,7 @@ void show_logs()
 	{
 		switch (icmp_header->type) {
 			case ICMP_DEST_UNREACH:
-				printf("%d bytes from _gateway (%s): ", g_ping->bytes_received, sender_ip_str);
+				printf("%ld bytes from _gateway (%s): ", sizeof(*icmp_header) + sizeof(*ip_header) + sizeof(icmp_header), sender_ip_str);
 				printf("Destination Net Unreachable\n");
 				break;
 			// Add more cases for other ICMP types as needed
@@ -136,7 +136,7 @@ void show_logs()
 	} else if (icmp_header->type == ICMP_ECHOREPLY) 
 	{
 		g_ping->rtt = (g_ping->receive_time.tv_sec - g_ping->send_time.tv_sec) * 1000.0 + (g_ping->receive_time.tv_usec - g_ping->send_time.tv_usec) / 1000.0;
-		printf("%d bytes from %s: icmp_seq=%d ", g_ping->bytes_received,sender_ip_str, g_ping->sequence_number++);
+		printf("%ld bytes from %s: icmp_seq=%d ", sizeof(*icmp_header),sender_ip_str, icmp_header->sequence_number);
 		printf("ttl=%d ", ip_header->ttl);
 		printf("time=%.3f ms\n", g_ping->rtt);
 		if (icmp_header->type == ICMP_ECHOREPLY && icmp_header->code == 0) {

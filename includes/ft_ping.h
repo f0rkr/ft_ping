@@ -18,6 +18,8 @@
 # include <stdarg.h>
 
 # define PING_PACKET_SIZE 56
+# define DEFAULT_TTL        64
+
 # define OPT_HELP       1
 # define OPT_VERBOSE    2
 # define OPT_FLOOD      3
@@ -69,6 +71,12 @@ typedef struct s_id_ts
     u_int32_t its_ttime;
 } t_id_ts;
 
+typedef struct s_timeval
+{
+    time_t          tv_sec;
+    suseconds_t     tv_usec;
+}               t_timeval;
+
 /** @brief ICMP packet struct
  * Constructing ICMP packet header
  *
@@ -84,12 +92,12 @@ typedef struct s_id_ts
  */
 typedef struct s_icmp_packet
 {
-    uint8_t     type; /* ICMP Type (e.g., 8 for Echo Request) */
-    uint8_t     code; /* ICMP code (e.g., 0 for Echo Request) */
-    uint16_t    checksum;  /* ICMP Checksum */
-    uint16_t    identifier; /* Identifier for this ping process */
-    uint16_t    sequence_number; /* Sequence number for this ping */
-    uint32_t    id_ts;
+    uint8_t         type; /* ICMP Type (e.g., 8 for Echo Request) */
+    uint8_t         code; /* ICMP code (e.g., 0 for Echo Request) */
+    uint16_t        checksum;  /* ICMP Checksum */
+    uint16_t        identifier; /* Identifier for this ping process */
+    uint16_t        sequence_number; /* Sequence number for this ping */
+    char            data[PING_PACKET_SIZE];
 }   t_icmp_packet;
 
 /** @brief ICMP echo packet struct
@@ -102,7 +110,6 @@ typedef struct s_echo_packet
 {
     t_ip_header     ip_header;
     t_icmp_packet   icmp_header;
-    char            data[PING_PACKET_SIZE - sizeof(t_icmp_packet)];
 }               t_echo_packet;
 
 typedef struct s_ping
